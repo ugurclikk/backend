@@ -1,79 +1,51 @@
-from flask import Flask, request, jsonify,session
+from flask import Flask, request, jsonify, session
 from flask_mysqldb import MySQL
 import hashlib
+
 app = Flask(__name__)
-app.secret_key = 'ecommerce'
+app.secret_key = 'farmer'
+
 # MySQL bağlantısı
 app.config['MYSQL_HOST'] = 'localhost'
 app.config['MYSQL_USER'] = 'root'
 app.config['MYSQL_PASSWORD'] = 'Admin1224.'
-app.config['MYSQL_DB'] = 'ecommerce'
+app.config['MYSQL_DB'] = 'Farmer'
 app.config['MYSQL_CURSORCLASS'] = 'DictCursor'  # Sonuçları sözlük olarak almak için
 
 mysql = MySQL(app)
 
+
+
+class Products:
+    def __init__(self):
+        pass
+
+    def get_products(self):
+        cursor = mysql.connection.cursor()
+        cursor.execute("SELECT * FROM products")
+        products = cursor.fetchall()
+        cursor.close()
+        return products
+
+    def add_product(self, name, image, planting_date, irrigation_frequency, chemicals, fertilizers, application_interval):
+        cursor = mysql.connection.cursor()
+        chemicals_str = ','.join(chemicals)
+        fertilizers_str = ','.join(fertilizers)
+        cursor.execute("INSERT INTO products (name, image, planting_date, irrigation_frequency, chemicals, fertilizers, application_interval) VALUES (%s, %s, %s, %s, %s, %s, %s)", 
+                    (name, image, planting_date, irrigation_frequency, chemicals_str, fertilizers_str, application_interval))
+        mysql.connection.commit()
+        cursor.close()
+
+
+
 def check_password_login(plain_password, hashed_password):
- 
     hashed_input_password = hashlib.sha256(plain_password.encode()).hexdigest()
     return hashed_input_password == hashed_password
 
 # Yeni iş ilanı oluşturma
 @app.route('/', methods=['GET'])
 def open():
-    return "Hello"
-
-
-@app.route('/jobs', methods=['POST'])
-def create_job():
-    data = request.get_json()
-    title = data['title']
-    description = data['description']
-    salary = data['salary']
-    cursor = mysql.connection.cursor()
-    cursor.execute("INSERT INTO jobs (title, description, salary) VALUES (%s, %s, %s)", (title, description, salary))
-    mysql.connection.commit()
-    cursor.close()
-    return jsonify({"message": "Job created successfully"})
-
-# Tüm iş ilanlarını listeleme
-@app.route('/jobs', methods=['GET'])
-def get_jobs():
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM jobs")
-    jobs = cursor.fetchall()
-    cursor.close()
-    return jsonify(jobs)
-
-# Belirli bir iş ilanını getirme
-@app.route('/jobs/<int:id>', methods=['GET'])
-def get_job(id):
-    cursor = mysql.connection.cursor()
-    cursor.execute("SELECT * FROM jobs WHERE id = %s", (id,))
-    job = cursor.fetchone()
-    cursor.close()
-    return jsonify(job)
-
-# Bir iş ilanını güncelleme
-@app.route('/jobs/<int:id>', methods=['PUT'])
-def update_job(id):
-    data = request.get_json()
-    title = data['title']
-    description = data['description']
-    salary = data['salary']
-    cursor = mysql.connection.cursor()
-    cursor.execute("UPDATE jobs SET title = %s, description = %s, salary = %s WHERE id = %s", (title, description, salary, id))
-    mysql.connection.commit()
-    cursor.close()
-    return jsonify({"message": "Job updated successfully"})
-
-# Bir iş ilanını silme
-@app.route('/jobs/<int:id>', methods=['DELETE'])
-def delete_job(id):
-    cursor = mysql.connection.cursor()
-    cursor.execute("DELETE FROM jobs WHERE id = %s", (id,))
-    mysql.connection.commit()
-    cursor.close()
-    return jsonify({"message": "Job deleted successfully"})
+    return "anan"
 
 # Kullanıcı kaydı
 @app.route('/register', methods=['POST'])
@@ -104,9 +76,7 @@ def login():
         cursor.execute("SELECT * FROM users WHERE email = %s", (email,))
         user = cursor.fetchone()
         cursor.close()
-        """print(check_password_login(user['password'], password))"""
-       # print(user['password'],password,check_password_login(user['password'], password))
-        if user and check_password_login(hashed_password=user['password'], plain_password=password):
+        if user and check_password_login(plain_password=password, hashed_password=user['password']):
             session['user_id'] = user['id']  # Oturum açıkken kullanıcıyı kimlik doğrulama
             return jsonify({"message": "Login successful"})
         else:
@@ -126,8 +96,30 @@ def verify():
         return jsonify({"authenticated": True})
     else:
         return jsonify({"authenticated": False})
+products = Products()
+
+# Ürünleri getirme
+@app.route('/products', methods=['GET'])
+def get_products():
+    all_products = products.get_products()
+    return jsonify(all_products)
+
+# Yeni ürün ekleme
+@app.route('/products', methods=['POST'])
+def add_new_product():
+    data = request.get_json()
+    name = data['name']
+    image = data['image']
+    planting_date = data['planting_date']
+    irrigation_frequency = data['irrigation_frequency']
+    chemicals = data['chemicals']
+    fertilizers = data['fertilizers']
+    application_interval = data['application_interval']
+
+    products.add_product(name, image, planting_date, irrigation_frequency, chemicals, fertilizers, application_interval)
+    return jsonify({"message": "Product added successfully"})
+
+
 
 if __name__ == '__main__':
     app.run(debug=True)
-    
-#functions
