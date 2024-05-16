@@ -43,9 +43,11 @@ def check_password_login(plain_password, hashed_password):
     return hashed_input_password == hashed_password
 
 # Yeni iş ilanı oluşturma
-@app.route('/', methods=['GET'])
-def open():
-    return "anan"
+
+
+@app.route('/hi', methods=['GET'])
+def openc():
+    return "hello world"
 
 # Kullanıcı kaydı
 @app.route('/register', methods=['POST'])
